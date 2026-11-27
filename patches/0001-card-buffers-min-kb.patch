@@ -1,0 +1,33 @@
+diff --git a/crates/victory-gpu/src/shadow.rs b/crates/victory-gpu/src/shadow.rs
+index 3c01fed..4245077 100644
+--- a/crates/victory-gpu/src/shadow.rs
++++ b/crates/victory-gpu/src/shadow.rs
+@@ -145,13 +145,27 @@ pub(crate) fn cards() -> bool {
+ /// `VICTORY_CARD_BUFFERS_MIN_MB` (16) and `VICTORY_CARD_BUFFERS_MB` (512).
+ /// Run 69's gameplay has ten title buffers of 16 MiB or more, 494 MB, and
+ /// 1,650 MB of the card's budget free.
++///
++/// `VICTORY_CARD_BUFFERS_MIN_KB` says the least size in KiB instead, so it
++/// can go under 1 MiB (fxceless c36971b): the copies under 1 MiB are some
++/// 3,700 of 3,800 and 30 MB in all, they stay in the PC's memory, and every
++/// load, store and atomic a shader does on them crosses the bus. What it
++/// costs: 64 KiB of the card's memory a copy and as much again for one
++/// shaders write.
+ fn card_limits() -> (u64, u64) {
+     static LIMITS: std::sync::OnceLock<(u64, u64)> = std::sync::OnceLock::new();
+     *LIMITS.get_or_init(|| {
+         let mb = |name: &str, default: u64| {
+             std::env::var(name).ok().and_then(|v| v.trim().parse::<u64>().ok()).unwrap_or(default) << 20
+         };
+-        (mb("VICTORY_CARD_BUFFERS_MIN_MB", 16).max(1 << 20), mb("VICTORY_CARD_BUFFERS_MB", 512))
++        let least = match std::env::var("VICTORY_CARD_BUFFERS_MIN_KB")
++            .ok()
++            .and_then(|v| v.trim().parse::<u64>().ok())
++        {
++            Some(kib) if kib > 0 => kib << 10,
++            _ => mb("VICTORY_CARD_BUFFERS_MIN_MB", 16).max(1 << 20),
++        };
++        (least, mb("VICTORY_CARD_BUFFERS_MB", 512))
+     })
+ }
+ 

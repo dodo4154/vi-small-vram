@@ -1,0 +1,10 @@
+# Run logs and screenshots from measurements.
+*.log
+*.log.err
+*.png
+*.jpg
+*.dmp
+
+# Local checkouts of the trees these notes are about.
+/verify/
+/port1/

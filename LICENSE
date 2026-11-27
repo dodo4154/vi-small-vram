@@ -1,0 +1,9 @@
+Notes, scripts and measurements in this repository are released under CC0 1.0
+Universal: to the extent possible under law, the authors have waived all
+copyright and related or neighboring rights to this work.
+
+patches/ is an exception: it is a derivative of VIctory and
+fxceless/victory-fork, which are GPL-3.0-or-later, and it stays under that
+licence.
+
+This repository contains no game files, no game code, no keys and no assets.
