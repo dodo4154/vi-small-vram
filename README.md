@@ -63,6 +63,27 @@ every draw then paints garbage); and the "all stages" number is an artifact of
 the picture collapsing. The card term is 5,000 draws and 2,548 indirect commands
 doing real work, not lanes spinning on a safety net.
 
+## A cost model the runs support
+
+Two points with very different draw counts:
+
+| draws a frame | card term |
+|---|---|
+| ~5,000 (the normal world) | 228-236 ms |
+| 291-444 (world dropped by broken shaders) | 130-153 ms |
+
+Sixteen times fewer draws bought 1.7 times less card time, so the term has a
+large part that does not scale with draws (~130 ms) and a part that does
+(~100 ms over ~4,700 draws, about **21 us a draw**). The fixed part is not
+pixel work either: 720p and native render to the same card term. What is left
+in it is the work that happens whatever is drawn — the GPU-side copies of the
+210 MB of shadow memory and the 80 MB read-back a frame, the hash and compare
+passes, and the layer's own passes.
+
+That is the shape of the problem on an 8 GB card: ~130 ms that only fewer
+copied bytes can move, plus ~21 us a draw that only fewer or cheaper draws can.
+Neither is reachable from the switches this repository measured.
+
 ## What the leaders on the board run on
 
 The known builds on PortWatch that report 15–45 ms frames are measured on
