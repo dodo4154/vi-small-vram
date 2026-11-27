@@ -40,30 +40,28 @@ prepares. 5,000 draws and 2,548 indirect commands a frame.
 | `VICTORY_BARRIER_TEST=indirect` | 366–378 | the two UAV barriers per indirect command are **not** the GPU wall (226–233 ms either way) |
 | `VICTORY_BARRIER_TEST=groups` | 346–726, image corrupt | the title's own 716 barrier groups cost 30–50 ms and are load-bearing |
 
-## The finding that matters
+## The loop-limit result, corrected
 
-`VICTORY_SHADER_LOOP_LIMIT` is the only switch that moved the GPU term, and it
-moved it hard:
+`VICTORY_SHADER_LOOP_LIMIT=64` appears to halve the card term (228-236 ms to
+130-153 ms). It does not, and the same log says why: that run executed **291-444
+draws a frame instead of ~5,000**. The shaders break, the layer drops the world,
+and a mostly empty frame is fast. The first write-up of this repository called it
+a finding; the per-stage runs below are what corrected it.
 
-| loop limit | frame | GPU term |
-|---|---|---|
-| default (2^7 pixel / 2^8 mesh / 2^12 other) | 331–343 | 228–236 |
-| `VICTORY_SHADER_LOOP_LIMIT=64` | **208–259 (median ~240)** | **130–153** |
-| `VICTORY_SHADER_LOOP_LIMIT=1024` | 143–251 then 1,436 / 6,779 | 72–159 |
+`VICTORY_LOOP_LIMIT_PIXEL`, `_VERTEX` and `_COMPUTE` (the switch this repository
+adds, one stage at a time) separate the stages:
 
-At 64 the picture is wrong (loops are cut short), so this is a measurement, not a
-setting. It says the wall is **translated-shader loop work**: cutting the bound
-in half nearly halves the GPU term, while skipping one world mesh pipeline, or
-four at once, leaves the GPU term at 220–228 ms and removing barriers changes
-nothing. Anyone with a shader compiler in front of them should look at loop
-emission (`LOOP_LIMIT`, the per-lane counter and abort branch in
-`crates/victory-shader/src/emit/lower.rs`) before touching scheduling.
+| stage lowered to 64 | frame | card term | draws |
+|---|---|---|---|
+| pixel (128 → 64) | 341-355 ms | 225-233 ms | ~5,090 |
+| compute (4,096 → 64) | 746-783 ms | 635-650 ms | ~5,050 |
+| all stages (previous section) | 208-259 ms | 130-153 ms | **291-444** |
 
-The translator's own comment explains it: the bound is a safety net for loops
-whose exit condition never arrives because a count they read is still zeros on
-the host ("a loop that never meets its exit ... runs to the limit in every
-lane"). So the frame is paying for lanes that hit the net. `docs/next-steps.md`
-lays out how to find those shaders, cheapest first.
+So: the pixel stage's loop bound is irrelevant to the frame; the compute stage's
+bound is load-bearing (cutting it makes the frame three times slower, because
+every draw then paints garbage); and the "all stages" number is an artifact of
+the picture collapsing. The card term is 5,000 draws and 2,548 indirect commands
+doing real work, not lanes spinning on a safety net.
 
 ## What the leaders on the board run on
 
