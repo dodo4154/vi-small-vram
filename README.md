@@ -63,6 +63,23 @@ every draw then paints garbage); and the "all stages" number is an artifact of
 the picture collapsing. The card term is 5,000 draws and 2,548 indirect commands
 doing real work, not lanes spinning on a safety net.
 
+## The one setting worth trying on a small card: `--console series-s`
+
+The Series S profile (1080p output, smaller textures) is the only configuration
+that changed the frame by a lot:
+
+| profile | frame | card term | copies | copy-back |
+|---|---|---|---|---|
+| series-x, `LATE_WAIT=3` | 331-343 ms | 228-236 ms | 68-74 ms / 210 MB | 74-78 ms |
+| series-s, `LATE_WAIT=3` (run 1) | **219-232 ms** | 131-140 ms | 55-57 ms / 129 MB | 44-46 ms |
+| series-s, `LATE_WAIT=3` (run 2, other spot in the world, streaming) | 281-518 ms | 97-158 ms | 62-86 ms / 158-206 MB | 36-66 ms |
+
+Run 1 is 4.3-4.6 fps against 3.0-3.0 for series-x, with the card's term down by a
+third and the copied bytes down by 40 %; run 2 was taken in a heavier, still
+streaming stretch and does not confirm the size of the win. Treat series-s as the
+first thing to try on 8 GB and the number as 20-35 % better, not as measured
+twice.
+
 ## A cost model the runs support
 
 Two points with very different draw counts:
