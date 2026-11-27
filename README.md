@@ -59,6 +59,12 @@ nothing. Anyone with a shader compiler in front of them should look at loop
 emission (`LOOP_LIMIT`, the per-lane counter and abort branch in
 `crates/victory-shader/src/emit/lower.rs`) before touching scheduling.
 
+The translator's own comment explains it: the bound is a safety net for loops
+whose exit condition never arrives because a count they read is still zeros on
+the host ("a loop that never meets its exit ... runs to the limit in every
+lane"). So the frame is paying for lanes that hit the net. `docs/next-steps.md`
+lays out how to find those shaders, cheapest first.
+
 ## What the leaders on the board run on
 
 The known builds on PortWatch that report 15–45 ms frames are measured on
